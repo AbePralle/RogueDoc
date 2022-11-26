@@ -256,7 +256,7 @@ scanner
 
   match input
     produceAny Symbols
-    case '\n': produce EOL
+    case '\n': call mark_beginning_of_line; produce EOL
     case '"':  tokenize_string
     case "'":  tokenize_character_or_string
     case "''": tokenize_two_quote_string
@@ -300,6 +300,7 @@ scanner
       if scan [^\n]*
         call process_comment
         consume '\n'
+        call mark_beginning_of_line
         produce EOL
       endIf
     endIf
@@ -309,6 +310,7 @@ scanner
     scan [^\n]*
     call process_comment
     consume '\n'
+    call mark_beginning_of_line
     produce EOL
 
   else
@@ -320,6 +322,16 @@ scanner
   if (not scan([_a-zA-Z][_a-zA-Z0-9]*)) return
 
   match buffer
+    case "Date": call use_DateTime; produce IDENTIFIER
+    case "File": call use_File; produce IDENTIFIER
+    case "JSON": call use_Value; produce IDENTIFIER
+    case "Process": call use_Process; produce IDENTIFIER
+    case "Scanner": call use_Scanner; produce IDENTIFIER
+    case "Set": call use_Set; produce IDENTIFIER
+    case "Time": call use_DateTime; produce IDENTIFIER
+    case "TimeInterval": call use_DateTime; produce IDENTIFIER
+    case "Timestamp": call use_DateTime; produce IDENTIFIER
+    case "Value": call use_Value; produce IDENTIFIER
     produceAny Keywords
     case "GLOBAL"
       # "GLOBAL PROPERTIES" / "GLOBAL METHODS"
@@ -536,10 +548,6 @@ scanner
 parser
 ----------------------------------------------------------------------
 - program_elements
-  produceNull
-
-#{
-- program_elements
   beginList
     while (hasAnother) program_element
   produceList
@@ -605,6 +613,7 @@ parser
 
       savePosition  # collect tokens
       type
+      call set_augment_context_name
       discardPosition
 
       savePosition  # collect tokens
@@ -621,18 +630,15 @@ parser
 
 
   on "module"
-    parse_module_id
+    call parse_module_id
     module_attributes
     produce DefineModule(name:String,attributes:Attributes)
   endOn
 
   on "nativeType"
     # EXAMPLE: nativeType<<"char*">> RogueCString
-    mustConsume "<<"
-    string
-    mustConsume ">>"
-    identifier
-    produce NativeType(c_type:String,rogue_type:String)
+    call define_native_type
+    return
   endOn
 
   if (nextIs("class"))
@@ -675,9 +681,16 @@ parser
   endIf
 
   on "uses"
+    saved_setting = 0
+    saved_setting = disable_output
+    disable_output = 0
+
     string
     uses_attributes
-    produce UsesModule(name:String,attributes)
+
+    disable_output = saved_setting
+    call on_uses_module
+    return
   endOn
 
   if (nextHasAttribute(structural))
@@ -685,44 +698,6 @@ parser
   endIf
 
   procedure_body
-
-- parse_module_id
-  on "::"
-    # ::                 -> Rogue
-    # ::MiddleScope ...  -> Rogue::MiddleScope ...
-    on IDENTIFIER
-      # ::MiddleScope [::InnerScope ...] -> Rogue::MiddleScope [::InnerScope]
-      create Identifier(name="Rogue::":String)
-      create Identifier(name=content)
-      call join_identifiers
-TODO
-      parse_next_module_id_segment
-      produce ModuleID(name:String)
-    elseOnOthers
-      produce ModuleID(name="Rogue":String)
-    endOn
-  elseOn IDENTIFIER
-    create Identifier(name=content)
-    parse_next_module_id_segment
-    produce ModuleID(name:String)
-  elseOnOthers
-    syntaxError "Expected module name or default module scope '::'."
-  endOn
-
-- parse_next_module_id_segment
-  on "::"
-    create Identifier(name="::":String)
-    call join_identifiers
-    on IDENTIFIER
-      create Identifier(name=content)
-      call join_identifiers
-      parse_next_module_id_segment
-    elseOnOthers
-      syntaxError "Module name expected."
-    endOn
-  elseOnOthers
-    return
-  endOn
 
 - subclass
   if (nextIs("subclass"))
@@ -924,7 +899,7 @@ TODO
           endWhile
           mustConsume ')'
         createList NamedTupleTypeElements
-        create Type(elements:NamedTupleTypeElements)
+        create Type(named_elements:NamedTupleTypeElements)
         list_or_optional_type
         return
       else
@@ -940,7 +915,7 @@ TODO
           endWhile
           mustConsume ')'
         createList AnonymousTupleTypeElements
-        create Type(elements:AnonymousTupleTypeElements)
+        create Type(anonymous_elements:AnonymousTupleTypeElements)
         list_or_optional_type
         return
       endIf
@@ -953,6 +928,7 @@ TODO
     type
     mustConsume ']'
     create Type(key_type:Type,value_type:Type)
+    call use_Table
     list_or_optional_type
     return
 
@@ -964,7 +940,7 @@ TODO
     return
 
   elseOnOthers
-    #call set_cur_token
+    call set_cur_token
     pathed_name
     remaining_type
 
@@ -1174,6 +1150,7 @@ TODO
   on @"primitive" -> AttributePrimitive
   on @"singleton" -> AttributeSingleton
   if (consume @"essential")
+    call class_attribute_essential
     produce AttributeEssential
   endIf
   syntaxError "Illegal class attribute. Expected one or more of [abstract api aspect compound essential primitive singleton]."
@@ -1395,6 +1372,7 @@ TODO
     on @"File"
       mustConsume '('
       string
+      call load_filepath_as_string
       mustConsume ')'
     elseOnOthers
       string
@@ -1416,6 +1394,7 @@ TODO
     on @"File"
       mustConsume '('
       string
+      call load_filepath_as_string
       mustConsume ')'
     elseOnOthers
       string
@@ -1547,6 +1526,26 @@ TODO
     endIf
     produce If(condition,statements,cmd_else):Conditional
   endOn
+
+- print_peek_8
+  savePosition
+  println ""
+  call print_peek
+  read
+  call print_peek
+  read
+  call print_peek
+  read
+  call print_peek
+  read
+  call print_peek
+  read
+  call print_peek
+  read
+  call print_peek
+  read
+  call print_peek
+  restorePosition
 
 - if_local_elseifs_or_else
   on "elseIf"
@@ -1816,7 +1815,7 @@ TODO
       else
         # Global method template instance, e.g. method name<<Int32>>(...)
         template_args
-        call join  # name + <<type-args>>
+        call join_identifiers  # name + <<type-args>>
       endIf
     endIf
 
@@ -3432,7 +3431,7 @@ TODO
 
   elseOn "module"
     savePosition
-    parse_module_id # adjusts Program.current_module
+    call parse_module_id # adjusts Program.current_module
     restorePosition
     call rewrite_cur_token
     return
@@ -3725,4 +3724,3 @@ TODO
 --------------------------------------------------------------------------------
 nativeTypes
 --------------------------------------------------------------------------------
-}#

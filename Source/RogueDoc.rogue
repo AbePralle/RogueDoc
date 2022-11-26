@@ -32,9 +32,8 @@ class RogueDoc
         System.exit 0
       endIf
 
-      scan_files
-      #if ($isDefined(PARSER_EXISTS)) parse_files
-      #else                           scan_files
+      if ($isDefined(PARSER_EXISTS)) parse_files
+      else                           scan_files
 
     method scan_files
       forEach (arg in command//args)

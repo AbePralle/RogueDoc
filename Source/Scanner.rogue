@@ -5,7 +5,19 @@ $include "ScannerCore.rogue"
 
 class Scanner : ScannerCore
   METHODS
-    method process_comment
-      trace "TODO"
+    method mark_beginning_of_line
 
+    method process_comment
+
+    method use_DateTime
+
+    method use_File
+
+    method use_Value
+
+    method use_Process
+
+    method use_Scanner
+
+    method use_Set
 endClass

@@ -8,14 +8,40 @@ class Parser : ParserCore
     method batch_augment_create_method
       trace "TODO"
 
+    method begin_join_ids
+    method begin_join_lowercase
+    method begin_join_strings
+    method begin_join_uppercase
+    method check_target
+    method class_attribute_essential
+
     method clone
       if (disable_output or _cmd_stack.is_empty) return
       local cmd = _cmd_stack.last
       if (cmd) _cmd_stack.add( cmd.cloned )
       else     _cmd_stack.add( cmd )
 
+    method collect_next_token
+    method collect_token_string
+    method create_definition
+    method create_local_definition
+    method create_rogue_version_string
+    method create_source_filepath
+    method create_source_line
+    method define_macro
+    method define_native_type
+
     method discard_last
       if (not disable_output and _cmd_stack.count) _cmd_stack.remove_last
+
+    method end_join_ids
+    method end_join_lowercase
+    method end_join_strings
+    method end_join_uppercase
+    method filename_to_file_bytes
+    method filename_to_file_string
+    method include_filepath
+    method insert_definition
 
     method join_identifiers
       if (not disable_output and _cmd_stack.count >= 2)
@@ -32,11 +58,21 @@ class Parser : ParserCore
       endIf
 
     method join_template_args
+      trace "TODO"
+      #{
       if (not disable_output and _cmd_stack.count >= 2)
         local b = _cmd_stack.remove_last
         local a = _cmd_stack.remove_last
         _cmd_stack.add( Identifier(b.t, b->(as TemplateArgs)->String(a->String)) )
       endIf
+      }#
+
+    method load_filepath_as_string
+    method mark_token
+    method on_begin_arg
+    method on_end_arg
+    method on_generic_fn_arg
+    method on_is_defined
 
     method on_parsed_augment
       trace "TODO"
@@ -53,8 +89,22 @@ class Parser : ParserCore
     method on_parsed_subclass
       trace "TODO"
 
+    method on_uses_module
+
+    method parse_module_id
+
+    method print_peek
+
+    method require_rogue_version
+
+    method rewrite_cur_token
+
+    method rewrite_token
+
     method set_augment_context_name
       trace "TODO"
+
+    method set_cur_token
 
     method store_statement_args
       if (disable_output) return
@@ -86,5 +136,12 @@ class Parser : ParserCore
         _cmd_stack.add( b )
         _cmd_stack.add( a )
       endIf
+
+    method use_Introspection
+    method use_Table
+    method use_Value
+    method uses_attribute_no_include
+    method uses_filepath
+    method write_this_module_id
 
 endClass
