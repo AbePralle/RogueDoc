@@ -5,4 +5,86 @@ $include "ParserCore.rogue"
 
 class Parser : ParserCore
   METHODS
+    method batch_augment_create_method
+      trace "TODO"
+
+    method clone
+      if (disable_output or _cmd_stack.is_empty) return
+      local cmd = _cmd_stack.last
+      if (cmd) _cmd_stack.add( cmd.cloned )
+      else     _cmd_stack.add( cmd )
+
+    method discard_last
+      if (not disable_output and _cmd_stack.count) _cmd_stack.remove_last
+
+    method join_identifiers
+      if (not disable_output and _cmd_stack.count >= 2)
+        local b = _cmd_stack.remove_last
+        local a = _cmd_stack.remove_last
+        _cmd_stack.add( Identifier(b.t, a->String + b->String) )
+      endIf
+
+    method join_strings
+      if (not disable_output and _cmd_stack.count >= 2)
+        local b = _cmd_stack.remove_last
+        local a = _cmd_stack.remove_last
+        _cmd_stack.add( LiteralString(b.t, a->String + b->String) )
+      endIf
+
+    method join_template_args
+      if (not disable_output and _cmd_stack.count >= 2)
+        local b = _cmd_stack.remove_last
+        local a = _cmd_stack.remove_last
+        _cmd_stack.add( Identifier(b.t, b->(as TemplateArgs)->String(a->String)) )
+      endIf
+
+    method on_parsed_augment
+      trace "TODO"
+
+    method on_parsed_class
+      trace "TODO"
+
+    method on_parsed_enum
+      trace "TODO"
+
+    method on_parsed_routine
+      trace "TODO"
+
+    method on_parsed_subclass
+      trace "TODO"
+
+    method set_augment_context_name
+      trace "TODO"
+
+    method store_statement_args
+      if (disable_output) return
+
+      local args = _cmd_stack.remove_last->(as Args)
+      assert args?
+      block access = _cmd_stack.last->(as Access)
+        if (access)
+          if (access.args) throw args.t.error( "Unexpected expression." )
+          access.args = args
+          return
+        endIf
+      endBlock
+
+      block access = _cmd_stack.last->(as ContextAccess)
+        if (access)
+          if (not access.args) access.args = args
+          else throw args.t.error( "Unexpected expression." )
+          return
+        endIf
+      endBlock
+
+      throw args.t.error( "Unexpected expression." )
+
+    method swap
+      if (not disable_output and _cmd_stack.count >= 2)
+        local b = _cmd_stack.remove_last
+        local a = _cmd_stack.remove_last
+        _cmd_stack.add( b )
+        _cmd_stack.add( a )
+      endIf
+
 endClass

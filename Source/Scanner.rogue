@@ -5,4 +5,7 @@ $include "ScannerCore.rogue"
 
 class Scanner : ScannerCore
   METHODS
+    method process_comment
+      trace "TODO"
+
 endClass
