@@ -45,12 +45,34 @@ class RogueDoc
 
     method parse_files
       if ($isDefined(PARSER_EXISTS))
+        local included_files = (String,Token[])[]
+
         forEach (arg in command//args)
           local filepath = arg->String
-          local parser = Parser( File(filepath) )
-          local ast = parser.parse
-          @trace ast
+          local tokens = Scanner( File(filepath) ).tokenize
+          included_files.add( (filepath,tokens) )
+          Parser(tokens).preprocess
+          Parser(tokens).[collecting_templates=true,disable_output=1].parse
+          #local parser = Parser( File(filepath) )
+          #local ast = parser.parse
+          #@trace ast
         endForEach
+
+        #trace included_files
+
+        #local tokens = Scanner( File(filepath) ).tokenize
+        #Analytics.tokenization.stop
+
+        #Analytics.preprocessing.start
+        #Parser( tokens ).preprocess
+        #Analytics.preprocessing.stop
+
+        #included_files[filepath] = IncludedFile( filepath, tokens, api )
+
+        ## First parser pass collects class templates but does not build an AST
+        #Analytics.parse_templates.start
+        #Parser(tokens).[collecting_templates=true,disable_output=1,is_api=api].parse
+
       endIf
 
     method parse_args( args:String[] )->Value

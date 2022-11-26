@@ -4,16 +4,33 @@ module RogueDoc
 $include "ParserCore.rogue"
 
 class Parser : ParserCore
+  GLOBAL PROPERTIES
+
+  PROPERTIES
+    collecting_templates  = false
+    processed_tokens      : Token[]
+
   METHODS
     method batch_augment_create_method
       trace "TODO"
 
     method begin_join_ids
+      trace "TODO"
+
     method begin_join_lowercase
+      trace "TODO"
+
     method begin_join_strings
+      trace "TODO"
+
     method begin_join_uppercase
+      trace "TODO"
+
     method check_target
+      trace "TODO"
+
     method class_attribute_essential
+      trace "TODO"
 
     method clone
       if (disable_output or _cmd_stack.is_empty) return
@@ -22,26 +39,87 @@ class Parser : ParserCore
       else     _cmd_stack.add( cmd )
 
     method collect_next_token
+      trace "TODO"
+
     method collect_token_string
+      trace "TODO"
+
     method create_definition
+      trace "TODO"
+
     method create_local_definition
+      trace "TODO"
+
     method create_rogue_version_string
+      trace "TODO"
+
     method create_source_filepath
+      trace "TODO"
+
     method create_source_line
+      trace "TODO"
+
     method define_macro
+      trace "TODO"
+
     method define_native_type
+      trace "TODO"
 
     method discard_last
       if (not disable_output and _cmd_stack.count) _cmd_stack.remove_last
 
     method end_join_ids
+      trace "TODO"
+
     method end_join_lowercase
+      trace "TODO"
+
     method end_join_strings
+      trace "TODO"
+
     method end_join_uppercase
+      trace "TODO"
+
     method filename_to_file_bytes
+      trace "TODO"
+
     method filename_to_file_string
+      trace "TODO"
+
     method include_filepath
+      trace "TODO"
+
     method insert_definition
+      #{
+      if (local_definitions)
+        local def = local_definitions[ _cur_t.content ]
+        if (def)
+          if (def.count > 0)
+            _tokens.insert( def, _position )
+            _limit += def.count
+            if (_position < _limit) _next_t = _tokens[_position]
+          endIf
+          return
+        endIf
+      endIf
+
+      local def = Program.definitions[ _cur_t.content ]
+      if (def)
+        if (def.count > 0)
+          _tokens.insert( def, _position )
+          _limit += def.count
+          if (_position < _limit) _next_t = _tokens[_position]
+        endIf
+        return
+      endIf
+
+      if (_next_t.type == TokenType.SYMBOL_LTLT)
+        if (expand_macro(Program.macros[_cur_t.content])) return
+        if (local_macros and expand_macro(local_macros[_cur_t->String])) return
+      endIf
+      }#
+
+      processed_tokens.add( _cur_t )
 
     method join_identifiers
       if (not disable_output and _cmd_stack.count >= 2)
@@ -68,17 +146,28 @@ class Parser : ParserCore
       }#
 
     method load_filepath_as_string
+      trace "TODO"
+
     method mark_token
+      trace "TODO"
+
     method on_begin_arg
+      noAction
+
     method on_end_arg
+      noAction
+
     method on_generic_fn_arg
+      trace "TODO"
+
     method on_is_defined
+      trace "TODO"
 
     method on_parsed_augment
       trace "TODO"
 
     method on_parsed_class
-      trace "TODO"
+      trace "TODO ", collecting_templates
 
     method on_parsed_enum
       trace "TODO"
@@ -90,21 +179,36 @@ class Parser : ParserCore
       trace "TODO"
 
     method on_uses_module
+      trace "TODO"
 
     method parse_module_id
+      trace "TODO"
+
+    method preprocess
+      #temporarily Program.current_module = Program.default_module
+      processed_tokens = Token[]( _tokens.count * 1.2 )
+      parse( ip_preprocess )
+      _tokens.clear
+      _tokens.add( processed_tokens )
+      #endTemporarily
 
     method print_peek
+      trace "TODO"
 
     method require_rogue_version
+      trace "TODO"
 
     method rewrite_cur_token
+      processed_tokens.add( _cur_t )
 
     method rewrite_token
+      processed_tokens.add( _read )
 
     method set_augment_context_name
       trace "TODO"
 
     method set_cur_token
+      _cur_t = _next_t
 
     method store_statement_args
       if (disable_output) return
@@ -138,10 +242,21 @@ class Parser : ParserCore
       endIf
 
     method use_Introspection
+      trace "TODO"
+
     method use_Table
+      trace "TODO"
+
     method use_Value
+      trace "TODO"
+
     method uses_attribute_no_include
+      trace "TODO"
+
     method uses_filepath
+      trace "TODO"
+
     method write_this_module_id
+      trace "TODO"
 
 endClass
